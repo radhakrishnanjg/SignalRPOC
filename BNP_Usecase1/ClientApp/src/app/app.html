@@ -1,0 +1,51 @@
+<div class="container py-4">
+  <h4 class="mb-3">PnL Reports</h4>
+
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'valid'" (click)="select('valid')">
+        Valid PnL Data
+      </button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'invalid'" (click)="select('invalid')">
+        Invalid PnL Data
+      </button>
+    </li>
+  </ul>
+
+  @if (loading) {
+  <div class="text-muted">Loading...</div>
+  } @else if (error) {
+  <div class="alert alert-danger">{{ error }}</div>
+  } @else {
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr>
+        <th>Source Type</th>
+        <th>File / Source</th>
+        <th>Source System</th>
+        <th class="text-end">Account Number</th>
+        <th class="text-end">PnL Amount</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of records; track $index) {
+      <tr>
+        <td>{{ r.sourceType }}</td>
+        <td>{{ r.fileName }}</td>
+        <td>{{ r.sourceSystem }}</td>
+        <td class="text-end">{{ r.accountNumber }}</td>
+        <td class="text-end">{{ r.pnLAmount }}</td>
+        <td>{{ r.paymentStatus }}</td>
+      </tr>
+      } @empty {
+      <tr>
+        <td colspan="6" class="text-center text-muted">No records found.</td>
+      </tr>
+      }
+    </tbody>
+  </table>
+  }
+</div>

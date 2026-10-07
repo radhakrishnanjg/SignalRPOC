@@ -1,0 +1,5 @@
+SourceSystem	AccountNumber	PnLAmount
+A 	90011	100
+B	90012	123
+C	90013	0
+D	90014	-12

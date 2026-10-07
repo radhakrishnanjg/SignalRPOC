@@ -1,0 +1,6 @@
+@BNP_Usecase1_HostAddress = http://localhost:5293
+
+GET {{BNP_Usecase1_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

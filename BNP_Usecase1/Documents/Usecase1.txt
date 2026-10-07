@@ -1,0 +1,13 @@
+Usecase: Design and come up with working solution covering real-time data capture, process and reporting application based on Clean architecture principles. 
+The application need to cover below 3 functionalities :
+1. Data capture: 2 modes of feeds covering start of day one time flat data files and Real time messaging queue based feed during the day. Both feed will have below fields -
+	SourceSystem  (string)
+	AccountNumber  (integer)
+	PnLAmount      (integer)
+2. Business Rules: Apply validation rule to flag Invalid record for those PnL amount records having value Zero otherwise flag as Valid record. 
+	Persist processed pnl data to back end dadtabase (including Invalid data).
+3. Data Reporting: 
+	a. Report validated PnL data that captured and validated from FeedFile and Realtime Messaging from source system.
+	b. Report Invalid PnL Data
+ 
+Target technical stack: C#.Net, ASP.Net Core/ MVC/ Angular, .Net API/WCF, Kafka/RabbitMQ, SignalR, SQL
