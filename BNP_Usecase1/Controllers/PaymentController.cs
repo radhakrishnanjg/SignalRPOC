@@ -8,7 +8,9 @@ namespace BNP_Usecase1.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PaymentController(IPaymentBusiness business, PaymentNotifier notifier, PaymentProducer producer) : ControllerBase
+    public class PaymentController(IPaymentBusiness business,
+     PaymentNotifier notifier, 
+     PaymentProducer producer) : ControllerBase
     {
         ///// <summary>Start-of-day flat file feed (CSV: SourceSystem,AccountNumber,PnLAmount).</summary>
         //[HttpPost("feed-file")]

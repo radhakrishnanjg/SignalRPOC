@@ -1,15 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.37502.11 d17.14
+VisualStudioVersion = 17.14.37502.11
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BNP_Usecase1", "BNP_Usecase1.csproj", "{56812B9D-B10A-4D3F-9801-2A85FC8C0937}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BNP_Usecase1", "BNP_Usecase1\BNP_Usecase1.csproj", "{56812B9D-B10A-4D3F-9801-2A85FC8C0937}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BNB.UsecaseRepository", "..\BNB.UsecaseRepository\BNB.UsecaseRepository.csproj", "{31BE46EC-8E38-4D59-8043-D2B3CC521F90}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BNB.UsecaseRepository", "BNB.UsecaseRepository\BNB.UsecaseRepository.csproj", "{31BE46EC-8E38-4D59-8043-D2B3CC521F90}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BNB.UsecaseServices", "..\BNB.UsecaseServices\BNB.UsecaseServices.csproj", "{503D3736-AD26-4E65-B0EF-F7F199B7A537}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BNB.UsecaseServices", "BNB.UsecaseServices\BNB.UsecaseServices.csproj", "{503D3736-AD26-4E65-B0EF-F7F199B7A537}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BNB.UsecaseEntities", "..\BNB.UsecaseEntities\BNB.UsecaseEntities.csproj", "{D6E87B4C-2604-42A8-8924-59EEE207566B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BNB.UsecaseEntities", "BNB.UsecaseEntities\BNB.UsecaseEntities.csproj", "{D6E87B4C-2604-42A8-8924-59EEE207566B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NewFolder1", "NewFolder1", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

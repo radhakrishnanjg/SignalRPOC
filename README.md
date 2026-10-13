@@ -31,6 +31,15 @@ Real-time messaging (queue + live UI stream) is planned for a later phase.
 | .NET client | Confluent.Kafka | 2.15.1 |
 | Tooling | Angular CLI, Node.js, npm | CLI 20.3 / Node 24 / npm 11 |
 
+.Net 8 Features
+	 Primary constructors
+	 IExceptionHandler
+	 BackgroundService
+	 	ExecuteAsync
+	 Important things.
+	 	Encapusultion used for the PaymentStatus
+		Allowed only get and post methods on CORS for client app 
+
 ### Database
 | Area | Technology |
 |---|---|
@@ -55,7 +64,7 @@ Feed file format: `SourceSystem`, `AccountNumber`, `PnLAmount`, separated by tab
 ## Running
 1. Run the scripts in `BNP_Usecase1/DBScripts` on the `BnBUsecase` database.
 2. Frontend (development): `cd BNP_Usecase1/ClientApp && npm install && npm start`
-3. Backend: run `BNP_Usecase1` (`dotnet run`), then open `http://localhost:5293/` (Swagger at `/swagger`).
+3. Backend: run `BNP_Usecase1` with the **IIS Express** profile (Visual Studio), then open `http://localhost:42688/swagger`.
 4. Production: `npm run build` in `ClientApp`; the API serves the output from `ClientApp/dist/ClientApp/browser`.
 
 ## API
@@ -71,7 +80,7 @@ Angular `PaymentService` has a single method, `getPnl(status)`, which calls `GET
 Flow: source system → **producer** → Kafka topic `pnl-realtime` → **consumer** (`Messaging/KafkaConsumerService.cs`, background service) → validate + save (same `InsertBatch` as the file feed) → SignalR push to the UI.
 - Package: `Confluent.Kafka` 2.15.1. Config: `Kafka:BootstrapServers`, `Kafka:Topic`, `Kafka:GroupId` in `appsettings.json`.
 - Broker: `docker-compose.yml` in the root runs a single-node Kafka (`apache/kafka:3.8.0`) on `localhost:9092`. Start with `docker compose up -d` (Docker Desktop must be running).
-- `POST /api/payment/publish` is a test producer (JSON array of `sourceSystem`, `accountNumber`, `pnLAmount`): it puts records on the topic and returns 202; the consumer saves them. Records are stored with `SourceType = Realtime`.
+- `POST /api/payment/publish` is a test producer (JSON array of `sourceSystem`, `accountNumber`, `pnLAmount`): it puts records on the topic and returns 202; the consumer saves them. Records saved by the Kafka consumer are stored with `SourceType = Messaging` (file feed = `File`, direct `POST /api/payment/realtime` = `Realtime`).
 - `POST /api/payment/realtime` still saves directly without Kafka.
 - The app starts normally if Kafka is down (consumer logs errors and keeps retrying); `publish` then returns 500 after ~5 s.
 

@@ -10,19 +10,24 @@ namespace BNP_Usecase1.Messaging
     {
         private readonly string _topic = config["Kafka:Topic"]!;
 
-        private readonly IProducer<Null, string> _producer = new ProducerBuilder<Null, string>(new ProducerConfig
+        private readonly IProducer<string, string> _producer = new ProducerBuilder<string, string>(new ProducerConfig
         {
             BootstrapServers = config["Kafka:BootstrapServers"],
-            MessageTimeoutMs = 5000 // fail fast (instead of 5 min) when the broker is down
+            Acks = Acks.All,             // wait until the broker has stored the message
+            EnableIdempotence = true,    // a retry can never create a duplicate message
+            MessageTimeoutMs = 5000      // fail fast (instead of 5 min) when the broker is down
         }).Build();
 
         public async Task PublishAsync(IEnumerable<PaymentDTO> payments)
         {
-            foreach (var p in payments)
+            // Send all records at once and wait for the broker to confirm every one of them.
+            // The key (account number) keeps records of the same account in order if partitions are added later.
+            var sends = payments.Select(p => _producer.ProduceAsync(_topic, new Message<string, string>
             {
-                var json = JsonSerializer.Serialize(new { p.SourceSystem, p.AccountNumber, p.PnLAmount });
-                await _producer.ProduceAsync(_topic, new Message<Null, string> { Value = json });
-            }
+                Key = p.AccountNumber.ToString(),
+                Value = JsonSerializer.Serialize(new { p.SourceSystem, p.AccountNumber, p.PnLAmount })
+            }));
+            await Task.WhenAll(sends);
         }
 
         public void Dispose()

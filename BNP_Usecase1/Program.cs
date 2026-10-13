@@ -33,8 +33,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // The Angular dev server (port 4200) calls this API directly using the base URL from its environment file.
-builder.Services.AddCors(options => options.AddPolicy("AngularDev", policy =>
-    policy.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+// GET: the report calls. POST: only the SignalR "negotiate" handshake (/hubs/payment/negotiate); the UI posts no data.
+builder.Services.AddCors(options => options.AddPolicy(APIConstant.AngularDevCorsPolicy, policy =>
+    policy.WithOrigins("http://localhost:4200").AllowAnyHeader().WithMethods("GET", "POST").AllowCredentials()));
 
 var app = builder.Build();
 
@@ -54,7 +55,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseRouting();
 
-app.UseCors("AngularDev");
+app.UseCors(APIConstant.AngularDevCorsPolicy);
 
 app.UseAuthorization();
 
@@ -64,7 +65,7 @@ app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
     endpoints.MapHub<PaymentHub>("/hubs/payment");
-});
+}); 
 
 app.UseSpa(spa =>
 {

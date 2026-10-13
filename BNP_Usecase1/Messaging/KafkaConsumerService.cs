@@ -8,6 +8,7 @@ namespace BNP_Usecase1.Messaging
 {
     // CONSUMER: runs for the whole life of the app, waits for messages on the topic and, for each one,
     // validates + saves it (same business code as the file feed) and pushes the live update to the UI.
+    // The offset is committed only after the save succeeds, so a failed save is retried, not lost.
     public class KafkaConsumerService(IServiceScopeFactory scopeFactory, IConfiguration config,
         PaymentNotifier notifier, ILogger<KafkaConsumerService> logger) : BackgroundService
     {
@@ -22,7 +23,8 @@ namespace BNP_Usecase1.Messaging
             {
                 BootstrapServers = config["Kafka:BootstrapServers"],
                 GroupId = config["Kafka:GroupId"],
-                AutoOffsetReset = AutoOffsetReset.Earliest // a new group starts from the oldest message
+                AutoOffsetReset = AutoOffsetReset.Earliest, // a new group starts from the oldest message
+                EnableAutoCommit = false                    // we commit ourselves, after the save succeeded
             }).Build();
 
             consumer.Subscribe(topic);
@@ -30,19 +32,31 @@ namespace BNP_Usecase1.Messaging
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                ConsumeResult<Ignore, string>? result = null;
                 try
                 {
-                    var result = consumer.Consume(stoppingToken);
-                    if (result?.Message != null) Save(result.Message.Value);
+                    result = consumer.Consume(stoppingToken);
+                    if (result?.Message == null) continue;
+
+                    await SaveAsync(result.Message.Value);
+                    consumer.Commit(result);
                 }
                 catch (OperationCanceledException)
                 {
                     break; // app is shutting down
                 }
+                catch (Exception ex) when (result != null && ex is JsonException or FormatException)
+                {
+                    // Poison message: it can never be parsed, so retrying is pointless. Log it and move past it.
+                    logger.LogError(ex, "Skipping unreadable Kafka message at {Offset}", result!.TopicPartitionOffset);
+                    consumer.Commit(result);
+                }
                 catch (Exception ex)
                 {
-                    // One bad message or a broker hiccup must not stop the consumer.
-                    logger.LogError(ex, "Kafka consume/save failed");
+                    // Transient failure (database down, broker hiccup): do not commit, go back to the failed
+                    // message and try it again after a short pause.
+                    logger.LogError(ex, "Kafka consume/save failed, will retry");
+                    if (result != null) consumer.Seek(result.TopicPartitionOffset);
                     await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
                 }
             }
@@ -50,17 +64,17 @@ namespace BNP_Usecase1.Messaging
             consumer.Close();
         }
 
-        private void Save(string json)
+        private async Task SaveAsync(string json)
         {
             var payment = JsonSerializer.Deserialize<PaymentDTO>(json, JsonOptions)
                 ?? throw new FormatException("Empty Kafka message.");
-            payment.SourceType = PaymentConstants.Realtime;
-            payment.FileName = DateTime.Now.ToString("yyyyMMddhhmmssfff");
+            payment.SourceType = PaymentConstants.Messaging;
+            payment.FileName = DateTime.Now.ToString("yyyyMMddHHmmssfff");
 
             using var scope = scopeFactory.CreateScope();
             var business = scope.ServiceProvider.GetRequiredService<IPaymentBusiness>();
             business.InsertBatch(new List<PaymentDTO> { payment });
-            notifier.PublishAsync(business).GetAwaiter().GetResult();
+            await notifier.PublishAsync(business);
         }
     }
 }

@@ -1,4 +1,4 @@
-@BNP_Usecase1_HostAddress = http://localhost:5293
+@BNP_Usecase1_HostAddress = http://localhost:42688
 
 GET {{BNP_Usecase1_HostAddress}}/weatherforecast/
 Accept: application/json
