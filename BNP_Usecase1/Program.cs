@@ -3,6 +3,7 @@ using BNP_Usecase1.Hubs;
 using BNP_Usecase1.Messaging;
 using BNP_Usecase1.Middleware;
 using BNB.UsecaseRepository;
+using BNB.UsecaseRepository.EF;
 using BNB.UsecaseRepository.Interfaces;
 using BNB.UsecaseServices;
 using BNB.UsecaseServices.Interfaces;
@@ -16,9 +17,10 @@ builder.Services.AddGlobalExceptionMiddleware();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<PaymentNotifier>();
 
-var connectionString = builder.Configuration.GetConnectionString("PaymentConnection")
-    ?? throw new InvalidOperationException("Connection string 'PaymentConnection' not found.");
-builder.Services.AddScoped<IPaymentRepository>(_ => new PaymentRepository(connectionString));
+// Active repository: ADO.NET. To use Entity Framework instead, register PaymentEFRepository here.
+//builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddDbContext<PaymentDbContext>();
+builder.Services.AddScoped<IPaymentRepository,PaymentEFRepository>();
 builder.Services.AddScoped<IPaymentBusiness, PaymentBusiness>();
 builder.Services.AddHostedService<FlatFileBackgroundService>();
 builder.Services.AddSingleton<PaymentProducer>();

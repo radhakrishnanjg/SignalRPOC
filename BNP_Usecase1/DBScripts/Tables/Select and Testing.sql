@@ -15,3 +15,5 @@ select format(getdate(),'yyyyMMddhhmmssfff')
 --update  Payment.TransactionDetails set  PnLAmount=PnLAmount + 100 
 --where 1=1
 --and PnLAmount>0
+
+2026-10-14 21:43:39.690

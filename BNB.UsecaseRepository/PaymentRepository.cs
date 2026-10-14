@@ -3,11 +3,15 @@ using System.Text.Json;
 using BNB.UsecaseEntities;
 using BNB.UsecaseRepository.Interfaces;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace BNB.UsecaseRepository
 {
-    public class PaymentRepository(string connectionString) : IPaymentRepository
+    public class PaymentRepository(IConfiguration config) : IPaymentRepository
     {
+        private readonly string connectionString = config.GetConnectionString("PaymentConnection")
+            ?? throw new InvalidOperationException("Connection string 'PaymentConnection' not found.");
+
         private const string ProcName = "Payment.usp_TransactionDetail_Insert";
         private const string GetProcName = "Payment.usp_TransactionDetail_GetByStatus";
         private const string FeedExistProcName = "Payment.usp_TransactionDetail_FeedExist";
@@ -64,13 +68,15 @@ namespace BNB.UsecaseRepository
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
+                // Values are read by the column names the SP returns, so the SELECT order can change safely.
                 var payment = new PaymentDTO
                 {
-                    FileName = reader.IsDBNull(0) ? null : reader.GetString(0),
-                    SourceType = reader.IsDBNull(1) ? null : reader.GetString(1),
-                    SourceSystem = reader.IsDBNull(2) ? null : reader.GetString(2),
-                    AccountNumber = reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
-                    PnLAmount = reader.IsDBNull(4) ? 0 : reader.GetInt32(4)
+                    FileName = reader["FileName"] as string,
+                    SourceType = reader["SourceType"] as string,
+                    SourceSystem = reader["SourceSystem"] as string,
+                    AccountNumber = reader["AccountNumber"] as int? ?? 0,
+                    PnLAmount = reader["PnLAmount"] as int? ?? 0,
+                    CreatedDate = reader["CreatedDate"] as DateTime? ?? default
                 };
                 payment.Validate(); // status is derived from PnLAmount, matching what was stored
                 result.Add(payment);

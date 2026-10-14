@@ -1,7 +1,7 @@
 # BNP Usecase 1 – PnL Capture, Validation and Reporting
 
 Captures PnL records from a start-of-day flat file feed, flags records with a PnL amount of `0` as **Invalid** (all others **Valid**), stores everything in SQL Server and reports Valid / Invalid data in an Angular UI.
-Real-time messaging (queue + live UI stream) is planned for a later phase.
+Records also arrive in real time (Kafka, or the UI's **Add Payment** popup over SignalR), and the UI updates live.
 
 ## Tech Stack
 
@@ -72,16 +72,17 @@ Feed file format: `SourceSystem`, `AccountNumber`, `PnLAmount`, separated by tab
 |---|---|---|
 | GET | `/api/payment/{status}` | PnL report by status: `valid` or `invalid` (case-insensitive; anything else returns 400) |
 | GET | `/api/payment` | All records |
-| POST | `/api/payment/realtime` | Real-time records (JSON array) |
+| POST | `/api/payment/publish` | Test producer: puts records on the Kafka topic |
 
-Angular `PaymentService` has a single method, `getPnl(status)`, which calls `GET /api/payment/{status}`.
+Records added from the UI popup do not use a REST endpoint; they go through the SignalR hub method `PaymentHub.AddPayment` (see Live Updates).
+
+Angular `PaymentService` has a single method, `getPnl(status)`, which calls `GET /api/payment/{status}`. `PaymentHubService` handles everything SignalR: `start()` (listen for pushes) and `addPayment()` (send a new record).
 
 ## Real-time Feed (Kafka)
 Flow: source system → **producer** → Kafka topic `pnl-realtime` → **consumer** (`Messaging/KafkaConsumerService.cs`, background service) → validate + save (same `InsertBatch` as the file feed) → SignalR push to the UI.
 - Package: `Confluent.Kafka` 2.15.1. Config: `Kafka:BootstrapServers`, `Kafka:Topic`, `Kafka:GroupId` in `appsettings.json`.
 - Broker: `docker-compose.yml` in the root runs a single-node Kafka (`apache/kafka:3.8.0`) on `localhost:9092`. Start with `docker compose up -d` (Docker Desktop must be running).
-- `POST /api/payment/publish` is a test producer (JSON array of `sourceSystem`, `accountNumber`, `pnLAmount`): it puts records on the topic and returns 202; the consumer saves them. Records saved by the Kafka consumer are stored with `SourceType = Messaging` (file feed = `File`, direct `POST /api/payment/realtime` = `Realtime`).
-- `POST /api/payment/realtime` still saves directly without Kafka.
+- `POST /api/payment/publish` is a test producer (JSON array of `sourceSystem`, `accountNumber`, `pnLAmount`): it puts records on the topic and returns 202; the consumer saves them. Records saved by the Kafka consumer are stored with `SourceType = Messaging` (file feed = `File`, UI popup via SignalR = `External`).
 - The app starts normally if Kafka is down (consumer logs errors and keeps retrying); `publish` then returns 500 after ~5 s.
 
 ## Error Handling
@@ -91,8 +92,10 @@ Flow: source system → **producer** → Kafka topic `pnl-realtime` → **consum
 
 ## Live Updates (SignalR)
 - Hub: `/hubs/payment` (`BNP_Usecase1/HUB/PaymentHub.cs`, package `Microsoft.AspNetCore.SignalR`, built into .NET 8). Client package: `@microsoft/signalr`.
-- After new records are saved (flat-file job or `POST /api/payment/realtime`), `PaymentNotifier.PublishAsync` pushes `ValidUpdated` and `InvalidUpdated` messages carrying the same lists as `GET /api/payment/valid` and `/invalid`.
-- The page replaces the table when the pushed list matches the tab being viewed.
+- **Client to server:** the **Add Payment** popup calls `PaymentHubService.addPayment()`, which invokes the hub method `AddPayment(List<PaymentDTO>)`. The hub validates, sets `SourceType = External`, saves with `InsertBatch` and returns a `FeedResult`.
+- **Server to client:** after new records are saved (flat-file job, Kafka consumer or `AddPayment`), `PaymentNotifier.PublishAsync` pushes `ValidUpdated` and `InvalidUpdated` messages carrying the same lists as `GET /api/payment/valid` and `/invalid`.
+- The page replaces the table when the pushed list matches the tab being viewed. The popup does not reload the table itself; it relies on the push.
+- Details and examples: [SignalR.md](SignalR.md).
 - Records changed directly in the database are not detected (no polling by design).
 
 ## Environments (Angular)

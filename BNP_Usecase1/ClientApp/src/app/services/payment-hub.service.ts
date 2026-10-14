@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HubConnectionBuilder } from '@microsoft/signalr';
 import { environment } from '../../environments/environment';
-import { Payment } from '../models/payment';
+import { NewPayment, Payment } from '../models/payment';
 
 @Injectable({ providedIn: 'root' })
 export class PaymentHubService {
@@ -15,5 +15,10 @@ export class PaymentHubService {
     this.connection.on('ValidUpdated', onValid);
     this.connection.on('InvalidUpdated', onInvalid);
     this.connection.start().catch(err => console.error('SignalR connection failed', err));
+  }
+
+  // Client -> server: calls PaymentHub.AddPayment. The server then pushes the updated lists back.
+  addPayment(payments: NewPayment[]): Promise<unknown> {
+    return this.connection.invoke('AddPayment', payments);
   }
 }

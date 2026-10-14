@@ -1,5 +1,15 @@
 <div class="container py-4">
-  <h4 class="mb-3">PnL Reports</h4>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">PnL Reports</h4>
+    <button type="button" class="btn btn-primary btn-sm" (click)="openAdd()">Add Payment</button>
+  </div>
+
+  @if (successMessage) {
+  <div class="alert alert-success alert-dismissible py-2" role="alert">
+    {{ successMessage }}
+    <button type="button" class="btn-close" aria-label="Close" (click)="dismissSuccess()"></button>
+  </div>
+  }
 
   <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
@@ -28,6 +38,7 @@
         <th class="text-end">Account Number</th>
         <th class="text-end">PnL Amount</th>
         <th>Status</th>
+        <th>Created Date</th>
       </tr>
     </thead>
     <tbody>
@@ -39,13 +50,67 @@
         <td class="text-end">{{ r.accountNumber }}</td>
         <td class="text-end">{{ r.pnLAmount }}</td>
         <td>{{ r.paymentStatus }}</td>
+        <td>{{ r.createdDate | date: 'dd-MMM-yyyy HH:mm:ss' }}</td>
       </tr>
       } @empty {
       <tr>
-        <td colspan="6" class="text-center text-muted">No records found.</td>
+        <td colspan="7" class="text-center text-muted">No records found.</td>
       </tr>
       }
     </tbody>
   </table>
   }
 </div>
+
+@if (showAdd) {
+<div class="modal-backdrop fade show"></div>
+<div class="modal d-block" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" [formGroup]="paymentForm" (ngSubmit)="submitAdd()" novalidate>
+      <div class="modal-header">
+        <h5 class="modal-title">Add Payment</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="closeAdd()"></button>
+      </div>
+      <div class="modal-body">
+        @if (addError) {
+        <div class="alert alert-danger py-2">{{ addError }}</div>
+        }
+        <div class="mb-3">
+          <label class="form-label" for="sourceSystem">Source System
+            <span class="text-danger">*</span>
+          </label>
+          <input id="sourceSystem" formControlName="sourceSystem" class="form-control" maxlength="100"
+            [class.is-invalid]="formErrors['sourceSystem']" (blur)="logValidationErrors()">
+          @if (formErrors['sourceSystem']) {
+          <div class="invalid-feedback">{{ formErrors['sourceSystem'] }}</div>
+          }
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="accountNumber">Account Number
+            <span class="text-danger">*</span></label>
+          <input id="accountNumber" formControlName="accountNumber" class="form-control" inputmode="numeric"
+            maxlength="15" [class.is-invalid]="formErrors['accountNumber']" (blur)="logValidationErrors()">
+          @if (formErrors['accountNumber']) {
+          <div class="invalid-feedback">{{ formErrors['accountNumber'] }}</div>
+          }
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="pnLAmount">PnL Amount
+            <span class="text-danger">*</span></label>
+          <input id="pnLAmount" formControlName="pnLAmount" class="form-control" inputmode="numeric"
+            [class.is-invalid]="formErrors['pnLAmount']" (blur)="logValidationErrors()">
+          @if (formErrors['pnLAmount']) {
+          <div class="invalid-feedback">{{ formErrors['pnLAmount'] }}</div>
+          } @else {
+          <div class="form-text">Whole numbers only. An amount of 0 is saved as Invalid.</div>
+          }
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeAdd()">Cancel</button>
+        <button type="submit" class="btn btn-success" [disabled]="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+}

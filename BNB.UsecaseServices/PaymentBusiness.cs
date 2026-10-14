@@ -20,12 +20,12 @@ namespace BNB.UsecaseServices
             throw new ArgumentException($"Unknown status '{status}'. Use 'valid' or 'invalid'.", nameof(status));
         }
 
-        public int Insert(PaymentDTO payment)
-        {
-            payment.FileName ??= PaymentConstants.Realtime; // FileName column is NOT NULL
-            payment.Validate();
-            return repository.Insert(payment);
-        }
+        //public int Insert(PaymentDTO payment)
+        //{
+        //    payment.FileName ??= PaymentConstants.Realtime; // FileName column is NOT NULL
+        //    payment.Validate();
+        //    return repository.Insert(payment);
+        //}
 
         // True when the feed file has NOT been loaded yet (file name not found in the table).
         public bool FeedExist(string fileName) => repository.FeedExist(Path.GetFileName(fileName));
@@ -80,7 +80,7 @@ namespace BNB.UsecaseServices
         {
             foreach (var p in payments)
             {
-                p.FileName ??= PaymentConstants.Realtime; // FileName column is NOT NULL
+                p.FileName ??= Guid.NewGuid().ToString();
                 p.Validate();
             }
 

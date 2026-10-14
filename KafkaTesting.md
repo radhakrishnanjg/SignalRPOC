@@ -137,7 +137,7 @@ Database:
 SELECT TOP 20 * FROM Payment.TransactionDetails ORDER BY 1 DESC;
 ```
 
-Pass: the rows from tests A, B and C are present (SourceType = `Messaging`; file feed rows are `File`, direct `/realtime` rows are `Realtime`).
+Pass: the rows from tests A, B and C are present (SourceType = `Messaging`; file feed rows are `File`, rows added from the UI popup are `External`).
 
 ## 9. Test D - Kafka holds messages while the API is down
 

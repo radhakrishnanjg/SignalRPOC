@@ -8,6 +8,7 @@ namespace BNB.UsecaseEntities
         public string? SourceType { get; set; }
         public string? PaymentStatus { get; private set; }
         public string? FileName { get; set; }
+        public DateTime CreatedDate { get; set; }
 
         // Business rule: PnL amount of zero => Invalid, otherwise Valid.
         // This is the only way the status can change.

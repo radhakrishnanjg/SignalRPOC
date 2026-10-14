@@ -13,6 +13,7 @@ BEGIN
 	SET NOCOUNT ON;
 
 	SELECT FileName, SourceType, SourceSystem, AccountNumber, PnLAmount, PaymentStatus
+	,CreatedDate
 	FROM Payment.TransactionDetails
 	WHERE @PaymentStatus IS NULL OR PaymentStatus = @PaymentStatus
 	ORDER BY TransactionId;
