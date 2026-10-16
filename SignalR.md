@@ -37,13 +37,12 @@ SignalR keeps a connection open between browser and server so data can flow **bo
 ```csharp
 public class PaymentHub(IPaymentBusiness business, PaymentNotifier notifier) : Hub
 {
-    public async Task<FeedResult> AddPayment(List<PaymentDTO> payments)
+    public async Task<FeedResult> AddPayment(List<PaymentEntity> payments)
     {
         if (payments == null || payments.Count == 0)
             throw new HubException("At least one record is required.");
 
-        foreach (var p in payments) p.SourceType = PaymentConstants.External;
-        var result = business.InsertBatch(payments);
+        var result = business.InsertBatch(payments, PaymentConstants.External);
         await notifier.PublishAsync(business);
         return result;
     }
@@ -56,8 +55,9 @@ public class PaymentHub(IPaymentBusiness business, PaymentNotifier notifier) : H
 |------|-------------|
 | `AddPayment(...)` | **Client to server.** The browser calls it by name with `connection.invoke('AddPayment', payments)`. The name must match. |
 | `HubException` | The safe way to reject a call. The message reaches the browser as a failed promise. |
-| `SourceType = External` | Marks records added from the UI, next to `File` and `Messaging`. |
-| `InsertBatch` | Same validate-and-save path as the file feed (amount `0` is saved as Invalid). |
+| `PaymentEntity` | The source data the browser sends: `SourceSystem`, `AccountNumber`, `PnLAmount`. The same type is used for flat-file lines and Kafka messages. |
+| `PaymentConstants.External` | The source type passed to `InsertBatch`, which marks records added from the UI, next to `File` and `Messaging`. |
+| `InsertBatch` | Turns each `PaymentEntity` into a `PaymentDTO` (adds source type, file name and status), then saves. Same path as the file feed (amount `0` is saved as Invalid). |
 | `PublishAsync` | Pushes the updated lists back to **all** browsers (server to client, section 2.2). |
 | Return value | The `FeedResult` (total, valid, invalid, persisted) goes back to the caller as the result of `invoke`. |
 

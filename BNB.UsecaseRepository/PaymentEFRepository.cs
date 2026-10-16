@@ -5,19 +5,35 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BNB.UsecaseRepository
 {
-    // Entity Framework version of PaymentRepository: same behaviour, no stored procedures or ADO.NET.
+    /// <summary>
+    /// Entity Framework repository with the same behaviour as PaymentRepository.
+    /// </summary>
     public class PaymentEFRepository(PaymentDbContext db) : IPaymentRepository
     {
+        /// <summary>
+        /// Returns all stored payments.
+        /// </summary>
         public List<PaymentDTO> GetAll() => Query(null);
 
+        /// <summary>
+        /// Returns stored payments with the given status.
+        /// </summary>
         public List<PaymentDTO> GetByStatus(string paymentStatus) => Query(paymentStatus);
 
-        // Same meaning as PaymentRepository: true when the file name is not in the table yet.
+        /// <summary>
+        /// Returns true when the file name is not in the table yet.
+        /// </summary>
         public bool FeedExist(string fileName) =>
             !db.TransactionDetails.AsNoTracking().Any(t => t.FileName == fileName);
 
+        /// <summary>
+        /// Saves one payment.
+        /// </summary>
         public int Insert(PaymentDTO payment) => InsertBatch(new List<PaymentDTO> { payment });
 
+        /// <summary>
+        /// Saves a list of payments in one transaction and returns the row count.
+        /// </summary>
         public int InsertBatch(List<PaymentDTO> payments)
         {
             if (payments.Count == 0) return 0;
@@ -38,6 +54,9 @@ namespace BNB.UsecaseRepository
             return db.SaveChanges();
         }
 
+        /// <summary>
+        /// Reads payments in id order and maps them to DTOs; a null status returns all.
+        /// </summary>
         // A null status returns all records.
         private List<PaymentDTO> Query(string? status)
         {

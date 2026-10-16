@@ -6,6 +6,9 @@ using Confluent.Kafka;
 
 namespace BNP_Usecase1.Messaging
 {
+    /// <summary>
+    /// Background Kafka consumer that saves each message and commits it only after the save.
+    /// </summary>
     // CONSUMER: runs for the whole life of the app, waits for messages on the topic and, for each one,
     // validates + saves it (same business code as the file feed) and pushes the live update to the UI.
     // The offset is committed only after the save succeeds, so a failed save is retried, not lost.
@@ -14,6 +17,9 @@ namespace BNP_Usecase1.Messaging
     {
         private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
+        /// <summary>
+        /// Reads messages from the topic in a loop, with retry and skip rules.
+        /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await Task.Yield(); // let the app finish starting; the loop below blocks while waiting for messages
@@ -64,16 +70,18 @@ namespace BNP_Usecase1.Messaging
             consumer.Close();
         }
 
+        /// <summary>
+        /// Saves one Kafka message and pushes the live update.
+        /// </summary>
         private async Task SaveAsync(string json)
         {
-            var payment = JsonSerializer.Deserialize<PaymentDTO>(json, JsonOptions)
+            var payment = JsonSerializer.Deserialize<PaymentEntity>(json, JsonOptions)
                 ?? throw new FormatException("Empty Kafka message.");
-            payment.SourceType = PaymentConstants.Messaging;
-            payment.FileName = DateTime.Now.ToString("yyyyMMddHHmmssfff");
 
             using var scope = scopeFactory.CreateScope();
             var business = scope.ServiceProvider.GetRequiredService<IPaymentBusiness>();
-            business.InsertBatch(new List<PaymentDTO> { payment });
+            business.InsertBatch(new List<PaymentEntity> { payment }, PaymentConstants.Messaging,
+                DateTime.Now.ToString("yyyyMMddHHmmssfff"));
             await notifier.PublishAsync(business);
         }
     }

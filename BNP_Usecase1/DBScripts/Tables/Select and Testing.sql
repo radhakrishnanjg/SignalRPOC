@@ -16,4 +16,5 @@ select format(getdate(),'yyyyMMddhhmmssfff')
 --where 1=1
 --and PnLAmount>0
 
-2026-10-14 21:43:39.690
+
+exec Payment.usp_TransactionDetail_GetByStatus 'valid'

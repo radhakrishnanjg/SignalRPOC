@@ -1,6 +1,36 @@
 @BNP_Usecase1_HostAddress = http://localhost:42688
 
-GET {{BNP_Usecase1_HostAddress}}/weatherforecast/
+### PaymentController
+
+### Test producer: puts records on the Kafka topic (Kafka must be running). Returns 202 Accepted.
+POST {{BNP_Usecase1_HostAddress}}/api/payment/publish
+Content-Type: application/json
+
+[
+  { "sourceSystem": "SYS1", "accountNumber": 1001, "pnLAmount": 2500 },
+  { "sourceSystem": "SYS2", "accountNumber": 2002, "pnLAmount": 0 }
+]
+
+### Same call with an empty list. Returns 400 Bad Request.
+POST {{BNP_Usecase1_HostAddress}}/api/payment/publish
+Content-Type: application/json
+
+[]
+
+### PnL report: valid records
+GET {{BNP_Usecase1_HostAddress}}/api/payment/valid
+Accept: application/json
+
+### PnL report: invalid records (PnL amount 0)
+GET {{BNP_Usecase1_HostAddress}}/api/payment/invalid
+Accept: application/json
+
+### Unknown status. Returns 400 Bad Request.
+GET {{BNP_Usecase1_HostAddress}}/api/payment/unknown
+Accept: application/json
+
+### All records
+GET {{BNP_Usecase1_HostAddress}}/api/payment
 Accept: application/json
 
 ###

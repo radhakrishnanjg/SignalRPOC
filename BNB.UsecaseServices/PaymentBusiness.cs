@@ -4,11 +4,19 @@ using BNB.UsecaseServices.Interfaces;
 
 namespace BNB.UsecaseServices
 {
+    /// <summary>
+    /// Business logic for payments: feed parsing, validation and saving.
+    /// </summary>
     public class PaymentBusiness(IPaymentRepository repository) : IPaymentBusiness
     {
+        /// <summary>
+        /// Returns all stored payments.
+        /// </summary>
         public List<PaymentDTO> GetAll() => repository.GetAll();
 
-        // status is "Valid" or "Invalid" (case-insensitive); anything else throws ArgumentException.
+        /// <summary>
+        /// Returns stored payments for 'valid' or 'invalid'; anything else throws ArgumentException.
+        /// </summary>
         public List<PaymentDTO> GetByStatus(string status)
         {
             if (string.Equals(status, PaymentConstants.Valid, StringComparison.OrdinalIgnoreCase))
@@ -19,25 +27,19 @@ namespace BNB.UsecaseServices
 
             throw new ArgumentException($"Unknown status '{status}'. Use 'valid' or 'invalid'.", nameof(status));
         }
-
-        //public int Insert(PaymentDTO payment)
-        //{
-        //    payment.FileName ??= PaymentConstants.Realtime; // FileName column is NOT NULL
-        //    payment.Validate();
-        //    return repository.Insert(payment);
-        //}
-
-        // True when the feed file has NOT been loaded yet (file name not found in the table).
+        /// <summary>
+        /// Returns true when the feed file has not been loaded yet.
+        /// </summary>
         public bool FeedExist(string fileName) => repository.FeedExist(Path.GetFileName(fileName));
 
-        // Expected columns (comma or tab separated): SourceSystem,AccountNumber,PnLAmount (header row optional).
-        // Throws FormatException listing every malformed line, so a bad file is never partly loaded.
-        // fileName is the full path of the flat file; only the name part is stored with the records.
-        public List<PaymentDTO> GetPaymentFromFeed(string fileName)
+        /// <summary>
+        /// Parses a comma or tab separated flat file; throws FormatException listing every bad line.
+        /// </summary>
+        public List<PaymentEntity> GetPaymentFromFeed(string fileName)
         {
             var feedName = Path.GetFileName(fileName);
             using var reader = new StreamReader(fileName);
-            var payments = new List<PaymentDTO>();
+            var payments = new List<PaymentEntity>();
             var errors = new List<string>();
             var lineNo = 0;
             string? line;
@@ -59,13 +61,11 @@ namespace BNB.UsecaseServices
                     continue;
                 }
 
-                payments.Add(new PaymentDTO
+                payments.Add(new PaymentEntity
                 {
                     SourceSystem = parts[0],
                     AccountNumber = account,
-                    PnLAmount = pnl,
-                    SourceType = PaymentConstants.FileFeed,
-                    FileName = feedName
+                    PnLAmount = pnl
                 });
             }
 
@@ -74,23 +74,29 @@ namespace BNB.UsecaseServices
 
             return payments;
         }
-
-        // Validates every record and persists them (invalid ones included).
-        public FeedResult InsertBatch(List<PaymentDTO> payments)
+        /// <summary>
+        /// Builds payment records, validates them, saves them (invalid ones too) and returns the counts.
+        /// </summary>
+        public FeedResult InsertBatch(List<PaymentEntity> payments, string sourceType, string? fileName = null)
         {
-            foreach (var p in payments)
+            var records = payments.Select(p => new PaymentDTO
             {
-                p.FileName ??= Guid.NewGuid().ToString();
-                p.Validate();
-            }
+                SourceSystem = p.SourceSystem,
+                AccountNumber = p.AccountNumber,
+                PnLAmount = p.PnLAmount,
+                SourceType = sourceType,
+                FileName = fileName ?? Guid.NewGuid().ToString()
+            }).ToList();
 
-            var persisted = repository.InsertBatch(payments);
-            var invalid = payments.Count(p => p.PaymentStatus == PaymentConstants.Invalid);
+            foreach (var r in records) r.Validate();
+
+            var persisted = repository.InsertBatch(records);
+            var invalid = records.Count(r => r.PaymentStatus == PaymentConstants.Invalid);
             return new FeedResult
             {
-                TotalRecords = payments.Count,
+                TotalRecords = records.Count,
                 InvalidRecords = invalid,
-                ValidRecords = payments.Count - invalid,
+                ValidRecords = records.Count - invalid,
                 Persisted = persisted
             };
         }

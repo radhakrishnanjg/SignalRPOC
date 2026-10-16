@@ -1,9 +1,13 @@
+using BNB.UsecaseEntities;
 using BNB.UsecaseServices.Interfaces;
 using BNP_Usecase1.Hubs;
 using Cronos;
 
 namespace BNP_Usecase1
 {
+    /// <summary>
+    /// Background job that loads flat files from a folder on a cron schedule.
+    /// </summary>
     // Picks up flat files from FlatFilePath on the FlatFileCronExpression schedule,
     // persists them via IPaymentBusiness and moves each processed file to a "Processed" sub-folder.
     public class FlatFileBackgroundService(IServiceScopeFactory scopeFactory,
@@ -14,6 +18,9 @@ namespace BNP_Usecase1
         private readonly string? _path = config.GetConnectionString("FlatFilePath");
         private readonly string? _cron = config.GetConnectionString("FlatFileCronExpression");
 
+        /// <summary>
+        /// Waits for each cron time and then processes the files.
+        /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             if (string.IsNullOrWhiteSpace(_path) || string.IsNullOrWhiteSpace(_cron))
@@ -40,6 +47,9 @@ namespace BNP_Usecase1
             }
         }
 
+        /// <summary>
+        /// Saves each new .txt file, pushes the live update and moves it to Processed.
+        /// </summary>
         private void ProcessFiles()
         {
             try
@@ -68,7 +78,7 @@ namespace BNP_Usecase1
                         }
                         else
                         {
-                            var result = business.InsertBatch(business.GetPaymentFromFeed(file));
+                            var result = business.InsertBatch(business.GetPaymentFromFeed(file), PaymentConstants.FileFeed, fileName);
                             notifier.PublishAsync(business).GetAwaiter().GetResult();
                             logger.LogInformation(
                                 "Processed {File}: total {Total}, valid {Valid}, invalid {Invalid}, persisted {Persisted}",

@@ -3,10 +3,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BNP_Usecase1.Middleware
 {
+    /// <summary>
+    /// Turns unhandled exceptions into 400 or 500 JSON responses.
+    /// </summary>
     // Single place that turns unhandled exceptions into HTTP responses (.NET 8 IExceptionHandler),
     // so repositories, business and controllers can simply throw.
     public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
     {
+        /// <summary>
+        /// Maps the exception to a status code and writes a ProblemDetails response.
+        /// </summary>
         public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception,
             CancellationToken cancellationToken)
         {
@@ -34,8 +40,14 @@ namespace BNP_Usecase1.Middleware
         }
     }
 
+    /// <summary>
+    /// Extension methods to register and enable the exception handler.
+    /// </summary>
     public static class GlobalExceptionMiddlewareExtensions
     {
+        /// <summary>
+        /// Registers the exception handler and problem details.
+        /// </summary>
         public static IServiceCollection AddGlobalExceptionMiddleware(this IServiceCollection services)
         {
             services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -43,6 +55,9 @@ namespace BNP_Usecase1.Middleware
             return services;
         }
 
+        /// <summary>
+        /// Adds the exception handler to the request pipeline.
+        /// </summary>
         public static IApplicationBuilder UseGlobalExceptionMiddleware(this IApplicationBuilder app)
         {
             return app.UseExceptionHandler();

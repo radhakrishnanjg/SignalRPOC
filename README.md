@@ -48,7 +48,7 @@ Records also arrive in real time (Kafka, or the UI's **Add Payment** popup over 
 
 ## Solution Layout
 ```
-BNB.UsecaseEntities     DTOs, constants, validation rule
+BNB.UsecaseEntities     PaymentEntity (source data: flat file, UI, Kafka), PaymentDTO (inherits it and adds source type, status, file name, created date), constants, validation rule
 BNB.UsecaseRepository   SQL Server access via stored procedures
 BNB.UsecaseServices     Business logic (feed parsing, validation, insert)
 BNP_Usecase1            Web API, flat-file background service, DB scripts, ClientApp (Angular)
@@ -92,7 +92,7 @@ Flow: source system → **producer** → Kafka topic `pnl-realtime` → **consum
 
 ## Live Updates (SignalR)
 - Hub: `/hubs/payment` (`BNP_Usecase1/HUB/PaymentHub.cs`, package `Microsoft.AspNetCore.SignalR`, built into .NET 8). Client package: `@microsoft/signalr`.
-- **Client to server:** the **Add Payment** popup calls `PaymentHubService.addPayment()`, which invokes the hub method `AddPayment(List<PaymentDTO>)`. The hub validates, sets `SourceType = External`, saves with `InsertBatch` and returns a `FeedResult`.
+- **Client to server:** the **Add Payment** popup calls `PaymentHubService.addPayment()`, which invokes the hub method `AddPayment(List<PaymentEntity>)`. The hub calls `InsertBatch(payments, PaymentConstants.External)`, which builds the `PaymentDTO` records (source type, file name, status), saves them and returns a `FeedResult`.
 - **Server to client:** after new records are saved (flat-file job, Kafka consumer or `AddPayment`), `PaymentNotifier.PublishAsync` pushes `ValidUpdated` and `InvalidUpdated` messages carrying the same lists as `GET /api/payment/valid` and `/invalid`.
 - The page replaces the table when the pushed list matches the tab being viewed. The popup does not reload the table itself; it relies on the push.
 - Details and examples: [SignalR.md](SignalR.md).

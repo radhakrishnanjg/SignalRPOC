@@ -3,11 +3,16 @@ using Microsoft.Extensions.Configuration;
 
 namespace BNB.UsecaseRepository.EF
 {
-    // Maps the existing table; the schema is owned by the SQL scripts, not by EF migrations.
+    /// <summary>
+    /// Entity Framework context that maps the existing Payment.TransactionDetails table.
+    /// </summary>
     public class PaymentDbContext(IConfiguration config) : DbContext
     {
         public DbSet<TransactionDetail> TransactionDetails => Set<TransactionDetail>();
 
+        /// <summary>
+        /// Connects to SQL Server using the PaymentConnection connection string.
+        /// </summary>
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
             if (options.IsConfigured) return;
@@ -16,6 +21,9 @@ namespace BNB.UsecaseRepository.EF
             options.UseSqlServer(connectionString);
         }
 
+        /// <summary>
+        /// Maps the entity to its table, key and column types.
+        /// </summary>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<TransactionDetail>(e =>

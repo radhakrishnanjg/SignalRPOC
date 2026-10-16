@@ -4,6 +4,9 @@ using Confluent.Kafka;
 
 namespace BNP_Usecase1.Messaging
 {
+    /// <summary>
+    /// Kafka producer that sends payment records to the topic.
+    /// </summary>
     // PRODUCER: sends PnL records to the Kafka topic. Real source systems would do this themselves;
     // here it backs the "publish" test endpoint so you can simulate a source system.
     public class PaymentProducer(IConfiguration config) : IDisposable
@@ -18,7 +21,10 @@ namespace BNP_Usecase1.Messaging
             MessageTimeoutMs = 5000      // fail fast (instead of 5 min) when the broker is down
         }).Build();
 
-        public async Task PublishAsync(IEnumerable<PaymentDTO> payments)
+        /// <summary>
+        /// Sends all records to the topic and waits for the broker to confirm them.
+        /// </summary>
+        public async Task PublishAsync(IEnumerable<PaymentEntity> payments)
         {
             // Send all records at once and wait for the broker to confirm every one of them.
             // The key (account number) keeps records of the same account in order if partitions are added later.
@@ -30,6 +36,9 @@ namespace BNP_Usecase1.Messaging
             await Task.WhenAll(sends);
         }
 
+        /// <summary>
+        /// Flushes pending messages and closes the producer.
+        /// </summary>
         public void Dispose()
         {
             _producer.Flush(TimeSpan.FromSeconds(2));

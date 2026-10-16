@@ -4,15 +4,20 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace BNP_Usecase1.Hubs
 {
+    /// <summary>
+    /// SignalR hub at /hubs/payment: browsers call it to add payments.
+    /// </summary>
     public class PaymentHub(IPaymentBusiness business, PaymentNotifier notifier) : Hub
     {
-        public async Task<FeedResult> AddPayment(List<PaymentDTO> payments)
+        /// <summary>
+        /// Saves payments sent from the UI, then pushes the updated lists to all browsers.
+        /// </summary>
+        public async Task<FeedResult> AddPayment(List<PaymentEntity> payments)
         {
             if (payments == null || payments.Count == 0)
                 throw new HubException("At least one record is required.");
 
-            foreach (var p in payments) p.SourceType = PaymentConstants.External;
-            var result = business.InsertBatch(payments);
+            var result = business.InsertBatch(payments, PaymentConstants.External);
             await notifier.PublishAsync(business);
             return result;
         }

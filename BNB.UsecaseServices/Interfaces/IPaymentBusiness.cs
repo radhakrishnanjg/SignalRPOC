@@ -6,9 +6,8 @@ namespace BNB.UsecaseServices.Interfaces
     {
         List<PaymentDTO> GetAll();
         List<PaymentDTO> GetByStatus(string status);
-        //int Insert(PaymentDTO payment);
         bool FeedExist(string fileName);
-        List<PaymentDTO> GetPaymentFromFeed(string fileName);
-        FeedResult InsertBatch(List<PaymentDTO> payments);
+        List<PaymentEntity> GetPaymentFromFeed(string fileName);
+        FeedResult InsertBatch(List<PaymentEntity> payments, string sourceType, string? fileName = null);
     }
 }

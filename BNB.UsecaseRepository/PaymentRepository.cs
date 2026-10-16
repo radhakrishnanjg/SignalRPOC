@@ -7,6 +7,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace BNB.UsecaseRepository
 {
+    /// <summary>
+    /// ADO.NET repository that uses stored procedures.
+    /// </summary>
     public class PaymentRepository(IConfiguration config) : IPaymentRepository
     {
         private readonly string connectionString = config.GetConnectionString("PaymentConnection")
@@ -16,10 +19,19 @@ namespace BNB.UsecaseRepository
         private const string GetProcName = "Payment.usp_TransactionDetail_GetByStatus";
         private const string FeedExistProcName = "Payment.usp_TransactionDetail_FeedExist";
 
+        /// <summary>
+        /// Returns all stored payments.
+        /// </summary>
         public List<PaymentDTO> GetAll() => Query(null);
 
+        /// <summary>
+        /// Returns stored payments with the given status.
+        /// </summary>
         public List<PaymentDTO> GetByStatus(string paymentStatus) => Query(paymentStatus);
 
+        /// <summary>
+        /// Returns true when the file name is not in the table yet.
+        /// </summary>
         // The SP returns 1 when the file name is not in the table yet, 0 when it is.
         public bool FeedExist(string fileName)
         {
@@ -30,8 +42,14 @@ namespace BNB.UsecaseRepository
             return Convert.ToInt32(cmd.ExecuteScalar()) == 1;
         }
 
+        /// <summary>
+        /// Saves one payment.
+        /// </summary>
         public int Insert(PaymentDTO payment) => InsertBatch(new List<PaymentDTO> { payment });
 
+        /// <summary>
+        /// Saves a list of payments with one stored procedure call (JSON) and returns the row count.
+        /// </summary>
         public int InsertBatch(List<PaymentDTO> payments)
         {
             if (payments.Count == 0) return 0;
@@ -57,6 +75,9 @@ namespace BNB.UsecaseRepository
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
+        /// <summary>
+        /// Reads payments from the stored procedure; a null status returns all.
+        /// </summary>
         // A null status makes the SP return all records.
         private List<PaymentDTO> Query(string? status)
         {

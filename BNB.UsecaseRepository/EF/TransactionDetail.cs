@@ -1,6 +1,8 @@
 namespace BNB.UsecaseRepository.EF
 {
-    // Row of Payment.TransactionDetails (see DBScripts/Tables/TransactionDetails.sql).
+    /// <summary>
+    /// Entity Framework entity for a row of Payment.TransactionDetails.
+    /// </summary>
     public class TransactionDetail
     {
         public int TransactionId { get; set; }
