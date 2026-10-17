@@ -24,11 +24,11 @@ namespace BNP_Usecase1.Messaging
         {
             await Task.Yield(); // let the app finish starting; the loop below blocks while waiting for messages
 
-            var topic = config["Kafka:Topic"]!;
+            var topic = config["KafkaSetting:Topic"]!;
             using var consumer = new ConsumerBuilder<Ignore, string>(new ConsumerConfig
             {
-                BootstrapServers = config["Kafka:BootstrapServers"],
-                GroupId = config["Kafka:GroupId"],
+                BootstrapServers = config["KafkaSetting:BootstrapServers"],
+                GroupId = config["KafkaSetting:GroupId"],
                 AutoOffsetReset = AutoOffsetReset.Earliest, // a new group starts from the oldest message
                 EnableAutoCommit = false                    // we commit ourselves, after the save succeeded
             }).Build();

@@ -14,8 +14,10 @@ namespace BNP_Usecase1.Hubs
         /// </summary>
         public async Task PublishAsync(IPaymentBusiness business)
         {
-            await hub.Clients.All.SendAsync("ValidUpdated", business.GetByStatus(PaymentConstants.Valid));
-            await hub.Clients.All.SendAsync("InvalidUpdated", business.GetByStatus(PaymentConstants.Invalid));
+            var lstValid = business.GetByStatus(PaymentConstants.Valid);
+            await hub.Clients.All.SendAsync("ValidUpdated", lstValid);
+            var lstInvalid = business.GetByStatus(PaymentConstants.Invalid);
+            await hub.Clients.All.SendAsync("InvalidUpdated", lstInvalid);
         }
     }
 }

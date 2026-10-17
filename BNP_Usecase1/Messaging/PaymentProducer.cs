@@ -11,11 +11,11 @@ namespace BNP_Usecase1.Messaging
     // here it backs the "publish" test endpoint so you can simulate a source system.
     public class PaymentProducer(IConfiguration config) : IDisposable
     {
-        private readonly string _topic = config["Kafka:Topic"]!;
+        private readonly string _topic = config["KafkaSetting:Topic"]!;
 
         private readonly IProducer<string, string> _producer = new ProducerBuilder<string, string>(new ProducerConfig
         {
-            BootstrapServers = config["Kafka:BootstrapServers"],
+            BootstrapServers = config["KafkaSetting:BootstrapServers"],
             Acks = Acks.All,             // wait until the broker has stored the message
             EnableIdempotence = true,    // a retry can never create a duplicate message
             MessageTimeoutMs = 5000      // fail fast (instead of 5 min) when the broker is down

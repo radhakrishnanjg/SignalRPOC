@@ -7,8 +7,10 @@ POST {{BNP_Usecase1_HostAddress}}/api/payment/publish
 Content-Type: application/json
 
 [
-  { "sourceSystem": "SYS1", "accountNumber": 1001, "pnLAmount": 2500 },
-  { "sourceSystem": "SYS2", "accountNumber": 2002, "pnLAmount": 0 }
+  { "sourceSystem": "SYS1", "accountNumber": 1001,
+  "pnLAmount": 2500 },
+  { "sourceSystem": "SYS2", "accountNumber": 2002,
+  "pnLAmount": 0 }
 ]
 
 ### Same call with an empty list. Returns 400 Bad Request.

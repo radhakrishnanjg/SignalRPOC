@@ -104,7 +104,7 @@ It is registered as a singleton in `Program.cs`: `builder.Services.AddSingleton<
 |------|---------|
 | `builder.Services.AddSignalR();` | Turns SignalR on. |
 | `builder.Services.AddSingleton<PaymentNotifier>();` | Makes the notifier injectable. |
-| `AddCors(... WithOrigins("http://localhost:4200") ... AllowCredentials())` | Angular runs on port 4200 and the API on another port, so the browser needs CORS permission. SignalR requires `AllowCredentials()` and a **specific origin**; `AllowAnyOrigin()` does not work. `POST` is allowed because the SignalR `negotiate` handshake is a POST. Saving from the popup does not need extra CORS rules, because it travels over the SignalR connection, not a separate REST call. |
+| `AddCors(... WithOrigins(angularUrl) ... AllowCredentials())` | `angularUrl` comes from `AngularClient:Url` in `appsettings*.json` (`http://localhost:4200`). Angular runs on port 4200 and the API on another port, so the browser needs CORS permission. SignalR requires `AllowCredentials()` and a **specific origin**; `AllowAnyOrigin()` does not work. `POST` is allowed because the SignalR `negotiate` handshake is a POST. Saving from the popup does not need extra CORS rules, because it travels over the SignalR connection, not a separate REST call. |
 | `endpoints.MapHub<PaymentHub>("/hubs/payment");` | Publishes the hub at this URL. It must match the URL in the Angular service. |
 
 ---

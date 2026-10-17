@@ -34,10 +34,12 @@ builder.Services.AddSpaStaticFiles(options => options.RootPath = "ClientApp/dist
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// The Angular dev server (port 4200) calls this API directly using the base URL from its environment file.
-// GET: the report calls. POST: only the SignalR "negotiate" handshake (/hubs/payment/negotiate); the UI posts no data.
+// Angular dev server address (appsettings: AngularClient:Url). Used for CORS and for the dev proxy below.
+var angularUrl = builder.Configuration["AngularClient:Url"]
+    ?? throw new InvalidOperationException("Setting 'AngularClient:Url' not found.");
+
 builder.Services.AddCors(options => options.AddPolicy(APIConstant.AngularDevCorsPolicy, policy =>
-    policy.WithOrigins("http://localhost:4200").AllowAnyHeader().WithMethods("GET", "POST").AllowCredentials()));
+    policy.WithOrigins(angularUrl).AllowAnyHeader().WithMethods("GET", "POST").AllowCredentials()));
 
 var app = builder.Build();
 
@@ -61,8 +63,6 @@ app.UseCors(APIConstant.AngularDevCorsPolicy);
 
 app.UseAuthorization();
 
-// Endpoints must be mapped explicitly here: UseSpa below is terminal, and the implicit
-// endpoint middleware would otherwise run after it, so API routes would never match.
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
@@ -74,7 +74,7 @@ app.UseSpa(spa =>
     spa.Options.SourcePath = "ClientApp";
     if (app.Environment.IsDevelopment())
     {
-        spa.UseProxyToSpaDevelopmentServer("http://localhost:4200");
+        spa.UseProxyToSpaDevelopmentServer(angularUrl);
     }
 });
 

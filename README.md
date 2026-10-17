@@ -80,7 +80,7 @@ Angular `PaymentService` has a single method, `getPnl(status)`, which calls `GET
 
 ## Real-time Feed (Kafka)
 Flow: source system → **producer** → Kafka topic `pnl-realtime` → **consumer** (`Messaging/KafkaConsumerService.cs`, background service) → validate + save (same `InsertBatch` as the file feed) → SignalR push to the UI.
-- Package: `Confluent.Kafka` 2.15.1. Config: `Kafka:BootstrapServers`, `Kafka:Topic`, `Kafka:GroupId` in `appsettings.json`.
+- Package: `Confluent.Kafka` 2.15.1. Config: `KafkaSetting:BootstrapServers`, `KafkaSetting:Topic`, `KafkaSetting:GroupId` in `appsettings.json`.
 - Broker: `docker-compose.yml` in the root runs a single-node Kafka (`apache/kafka:3.8.0`) on `localhost:9092`. Start with `docker compose up -d` (Docker Desktop must be running).
 - `POST /api/payment/publish` is a test producer (JSON array of `sourceSystem`, `accountNumber`, `pnLAmount`): it puts records on the topic and returns 202; the consumer saves them. Records saved by the Kafka consumer are stored with `SourceType = Messaging` (file feed = `File`, UI popup via SignalR = `External`).
 - The app starts normally if Kafka is down (consumer logs errors and keeps retrying); `publish` then returns 500 after ~5 s.
@@ -99,4 +99,4 @@ Flow: source system → **producer** → Kafka topic `pnl-realtime` → **consum
 - Records changed directly in the database are not detected (no polling by design).
 
 ## Environments (Angular)
-`src/environments/environment.development.ts` → `apiBaseUrl: http://localhost:42688` (used by `ng serve`); `environment.ts` → `apiBaseUrl: ''` (production, same origin). CORS in `Program.cs` allows `http://localhost:4200`.
+`src/environments/environment.development.ts` → `apiBaseUrl: http://localhost:42688` (used by `ng serve`); `environment.ts` → `apiBaseUrl: ''` (production, same origin). CORS in `Program.cs` allows the origin set in `appsettings*.json` → `AngularClient:Url` (`http://localhost:4200`); the same setting is used for the dev proxy. The Angular dev server port is fixed to 4200 in `ClientApp/angular.json` (`serve.options.port`), so change both together.
