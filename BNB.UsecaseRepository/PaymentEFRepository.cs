@@ -38,9 +38,18 @@ namespace BNB.UsecaseRepository
         {
             if (payments.Count == 0) return 0;
 
+            // Skip messages already saved (redelivered by Kafka after a crash before commit).
+            var ids = payments.Where(p => p.MessageId != null).Select(p => p.MessageId).ToList();
+            var existing = ids.Count == 0
+                ? new HashSet<Guid?>()
+                : db.TransactionDetails.AsNoTracking().Where(t => ids.Contains(t.MessageId)).Select(t => t.MessageId).ToHashSet();
+            payments = payments.Where(p => p.MessageId == null || !existing.Contains(p.MessageId)).ToList();
+            if (payments.Count == 0) return 0;
+
             var now = DateTime.Now;
             db.TransactionDetails.AddRange(payments.Select(p => new TransactionDetail
             {
+                MessageId = p.MessageId,
                 SourceType = p.SourceType,
                 SourceSystem = p.SourceSystem,
                 AccountNumber = p.AccountNumber,

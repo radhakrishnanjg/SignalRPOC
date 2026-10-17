@@ -6,6 +6,7 @@ namespace BNB.UsecaseRepository.EF
     public class TransactionDetail
     {
         public int TransactionId { get; set; }
+        public Guid? MessageId { get; set; }
         public string FileName { get; set; } = string.Empty;
         public string? SourceType { get; set; }
         public string? SourceSystem { get; set; }

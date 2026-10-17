@@ -10,7 +10,8 @@ Records also arrive in real time (Kafka, or the UI's **Add Payment** popup over 
 |---|---|---|
 | Runtime / Framework | .NET / ASP.NET Core Web API | 8.0 (C# 12) |
 | Architecture | Clean architecture: Entities → Repository → Services → API | – |
-| Data access | Microsoft.Data.SqlClient (stored procedures, JSON insert via `OPENJSON`) | 5.2.2 |
+| Data access | Entity Framework Core (active, `PaymentEFRepository`) | 8.0.11 |
+| Data access (alternative) | Microsoft.Data.SqlClient (stored procedures, JSON insert via `OPENJSON`, `PaymentRepository`) | 5.2.2 |
 | Background job | `BackgroundService` + Cronos (cron scheduling) | Cronos 0.13.0 |
 | SPA hosting | Microsoft.AspNetCore.SpaServices.Extensions | 8.0.x |
 | API docs | Swashbuckle.AspNetCore (Swagger) | 6.6.2 |
@@ -27,7 +28,7 @@ Records also arrive in real time (Kafka, or the UI's **Add Payment** popup over 
 ### Messaging
 | Area | Technology | Version |
 |---|---|---|
-| Message queue | Apache Kafka (Docker, KRaft single node) | 3.8.0 |
+| Message queue | Apache Kafka (local install on Windows, KRaft single node, started with `start-kafka.cmd`) | 4.x |
 | .NET client | Confluent.Kafka | 2.15.1 |
 | Tooling | Angular CLI, Node.js, npm | CLI 20.3 / Node 24 / npm 11 |
 
@@ -44,12 +45,12 @@ Records also arrive in real time (Kafka, or the UI's **Add Payment** popup over 
 | Area | Technology |
 |---|---|
 | Database | SQL Server (SQL Express, database `BnBUsecase`, schema `Payment`) |
-| Scripts | `BNP_Usecase1/DBScripts` – table `TransactionDetails` and stored procedures `usp_TransactionDetail_Insert`, `usp_TransactionDetail_GetByStatus`, `usp_TransactionDetail_FeedExist` (each with a rollback script) |
+| Scripts | `BNP_Usecase1/DBScripts` – table `TransactionDetails` (including the nullable `MessageId` column with a unique filtered index) and stored procedures `usp_TransactionDetail_Insert`, `usp_TransactionDetail_GetByStatus`, `usp_TransactionDetail_FeedExist` (each with a rollback script) |
 
 ## Solution Layout
 ```
-BNB.UsecaseEntities     PaymentEntity (source data: flat file, UI, Kafka), PaymentDTO (inherits it and adds source type, status, file name, created date), constants, validation rule
-BNB.UsecaseRepository   SQL Server access via stored procedures
+BNB.UsecaseEntities     PaymentEntity (source data: flat file, UI, Kafka; optional MessageId set by the Kafka producer), PaymentDTO (inherits it and adds source type, status, file name, created date), constants, validation rule
+BNB.UsecaseRepository   SQL Server access: Entity Framework (PaymentEFRepository, active) or stored procedures (PaymentRepository); switch in Program.cs
 BNB.UsecaseServices     Business logic (feed parsing, validation, insert)
 BNP_Usecase1            Web API, flat-file background service, DB scripts, ClientApp (Angular)
 ```
@@ -80,9 +81,11 @@ Angular `PaymentService` has a single method, `getPnl(status)`, which calls `GET
 
 ## Real-time Feed (Kafka)
 Flow: source system → **producer** → Kafka topic `pnl-realtime` → **consumer** (`Messaging/KafkaConsumerService.cs`, background service) → validate + save (same `InsertBatch` as the file feed) → SignalR push to the UI.
-- Package: `Confluent.Kafka` 2.15.1. Config: `KafkaSetting:BootstrapServers`, `KafkaSetting:Topic`, `KafkaSetting:GroupId` in `appsettings.json`.
-- Broker: `docker-compose.yml` in the root runs a single-node Kafka (`apache/kafka:3.8.0`) on `localhost:9092`. Start with `docker compose up -d` (Docker Desktop must be running).
+- Package: `Confluent.Kafka` 2.15.1. Config: `KafkaSetting:BootstrapServers`, `KafkaSetting:Topic`, `KafkaSetting:GroupId` (`pnl-consumer1`) in `appsettings.json`.
+- Broker: a local Kafka install in `C:\kafka` on `localhost:9092`. Start it with `start-kafka.cmd` in the root; setup is in [KafkaTesting.md](KafkaTesting.md).
 - `POST /api/payment/publish` is a test producer (JSON array of `sourceSystem`, `accountNumber`, `pnLAmount`): it puts records on the topic and returns 202; the consumer saves them. Records saved by the Kafka consumer are stored with `SourceType = Messaging` (file feed = `File`, UI popup via SignalR = `External`).
+- **No duplicates (idempotent consumer):** the producer (`Messaging/PaymentProducer.cs`) adds a unique `MessageId` (Guid) to every message. If the consumer saves a message but crashes before committing the offset, Kafka delivers it again. The database then ignores it: `usp_TransactionDetail_Insert` (and `PaymentEFRepository.InsertBatch`) skip a `MessageId` that is already stored, and the unique index `UX_TransactionDetails_MessageId` (`WHERE MessageId IS NOT NULL`) is the final guard. Only `Messaging` records keep a `MessageId`; `File`, `External` and `Realtime` rows store `NULL` (`PaymentBusiness.InsertBatch` enforces this). File duplicates are still prevented by `FeedExist` on the file name.
+- The producer also uses `Acks.All` and `EnableIdempotence`, so its own retries never create duplicate messages.
 - The app starts normally if Kafka is down (consumer logs errors and keeps retrying); `publish` then returns 500 after ~5 s.
 
 ## Error Handling

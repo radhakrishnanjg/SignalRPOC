@@ -27,11 +27,12 @@ namespace BNP_Usecase1.Messaging
         public async Task PublishAsync(IEnumerable<PaymentEntity> payments)
         {
             // Send all records at once and wait for the broker to confirm every one of them.
+            // Each record gets a unique MessageId here; the database skips a MessageId it already has.
             // The key (account number) keeps records of the same account in order if partitions are added later.
             var sends = payments.Select(p => _producer.ProduceAsync(_topic, new Message<string, string>
             {
                 Key = p.AccountNumber.ToString(),
-                Value = JsonSerializer.Serialize(new { p.SourceSystem, p.AccountNumber, p.PnLAmount })
+                Value = JsonSerializer.Serialize(new { MessageId = p.MessageId ?? Guid.NewGuid(), p.SourceSystem, p.AccountNumber, p.PnLAmount })
             }));
             await Task.WhenAll(sends);
         }

@@ -93,8 +93,8 @@ It is registered as a singleton in `Program.cs`: `builder.Services.AddSingleton<
 | Trigger | Where |
 |---------|-------|
 | Add Payment popup (`AddPayment` hub method) | [PaymentHub.cs:17](BNP_Usecase1/HUB/PaymentHub.cs#L17) |
-| A `.txt` file dropped in the input folder | [FlatFileBackgroundService.cs:72](BNP_Usecase1/FlatFileBackgroundService.cs#L72) |
-| A Kafka message consumed | [KafkaConsumerService.cs:77](BNP_Usecase1/Messaging/KafkaConsumerService.cs#L77) |
+| A `.txt` file dropped in the input folder | [FlatFileBackgroundService.cs:81](BNP_Usecase1/FlatFileBackgroundService.cs#L81) |
+| A Kafka message consumed | [KafkaConsumerService.cs:85](BNP_Usecase1/Messaging/KafkaConsumerService.cs#L85) |
 
 **Real-time example:** an operations user has the *Valid* tab open. A colleague saves 3 payments through the Add Payment popup. The hub saves them, calls `PublishAsync`, and a moment later the 3 new rows appear on the user's screen with no refresh.
 

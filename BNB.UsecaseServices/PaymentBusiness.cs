@@ -81,6 +81,8 @@ namespace BNB.UsecaseServices
         {
             var records = payments.Select(p => new PaymentDTO
             {
+                // Only Kafka (Messaging) records carry a MessageId; File / External / Realtime rows stay NULL in the table.
+                MessageId = sourceType == PaymentConstants.Messaging ? p.MessageId : null,
                 SourceSystem = p.SourceSystem,
                 AccountNumber = p.AccountNumber,
                 PnLAmount = p.PnLAmount,

@@ -56,6 +56,7 @@ namespace BNB.UsecaseRepository
 
             var json = JsonSerializer.Serialize(payments.Select(p => new
             {
+                p.MessageId,
                 p.SourceType,
                 p.SourceSystem,
                 p.AccountNumber,

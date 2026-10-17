@@ -5,7 +5,7 @@ End-to-end test of the real-time feed:
 ```
 Swagger/PowerShell → POST /api/payment/publish → PaymentProducer
    → Kafka topic pnl-realtime (localhost:9092)
-   → KafkaConsumerService (group pnl-consumer) → validate + SQL save → SignalR → Angular UI
+   → KafkaConsumerService (group pnl-consumer1) → validate + SQL save → SignalR → Angular UI
 ```
 
 Ports used below: API `42688` (IIS Express profile, matches the Angular environment file), Angular `4200`, Kafka `9092`.
@@ -19,7 +19,7 @@ Ports used below: API `42688` (IIS Express profile, matches the Angular environm
   set "PATH=%JAVA_HOME%\bin;%PATH%"
   ```
   (use your real JDK 17 folder name)
-- SQL Server `.\sqlexpress` with database `BnBUsecase`, the table `Payment.TransactionDetails` and the stored procedure `Payment.usp_TransactionDetail_Insert` (scripts in `BNP_Usecase1\DBScripts`).
+- SQL Server `.\sqlexpress` with database `BnBUsecase`, the table `Payment.TransactionDetails` (with the `MessageId` column and unique index) and the stored procedure `Payment.usp_TransactionDetail_Insert` (scripts in `BNP_Usecase1\DBScripts`).
 - Angular dev server must call the API you actually run: `BNP_Usecase1\ClientApp\src\environments\environment.development.ts` has `apiBaseUrl: 'http://localhost:42688'`. Keep the API and this value on the same port.
 
 > The `main ERROR Reconfiguration failed: No configuration found` line printed by Kafka tools is a harmless log4j warning. The `TimeoutException` at the end of `--timeout-ms` runs is also expected.
@@ -65,7 +65,7 @@ In Visual Studio pick the **IIS Express** profile and run (F5). It serves http:/
 
 Pass: the API output shows `Kafka consumer listening on topic pnl-realtime`.
 Under IIS Express the app (and its consumer) only starts on the first request, so open http://localhost:42688/swagger once after starting.
-Run only one API instance: two instances in group `pnl-consumer` split the messages between them.
+Run only one API instance: two instances in group `pnl-consumer1` split the messages between them.
 
 ## 4. Start Angular
 
@@ -126,10 +126,10 @@ Consumer group state:
 
 ```cmd
 .\bin\windows\kafka-consumer-groups.bat --bootstrap-server localhost:9092 --list
-.\bin\windows\kafka-consumer-groups.bat --bootstrap-server localhost:9092 --describe --group pnl-consumer
+.\bin\windows\kafka-consumer-groups.bat --bootstrap-server localhost:9092 --describe --group pnl-consumer1
 ```
 
-Pass: `pnl-consumer` is listed, and `LAG` is `0`. `CURRENT-OFFSET` equals `LOG-END-OFFSET` once everything is saved.
+Pass: `pnl-consumer1` is listed, and `LAG` is `0`. `CURRENT-OFFSET` equals `LOG-END-OFFSET` once everything is saved.
 
 Database:
 
@@ -158,6 +158,18 @@ Pass: the rows from tests A, B and C are present (SourceType = `Messaging`; file
 3. The API itself stays up; the consumer logs errors and keeps retrying.
 4. Start Kafka again; the consumer reconnects by itself.
 
+## 11. Test F - the same message is not saved twice
+
+Each message published through `POST /api/payment/publish` gets a unique `MessageId`. To prove a redelivered message is ignored, send a message, then replay it with the same id:
+
+```cmd
+.\bin\windows\kafka-console-producer.bat --bootstrap-server localhost:9092 --topic pnl-realtime
+>{"MessageId":"11111111-1111-1111-1111-111111111111","SourceSystem":"SYS5","AccountNumber":5001,"PnLAmount":900}
+>{"MessageId":"11111111-1111-1111-1111-111111111111","SourceSystem":"SYS5","AccountNumber":5001,"PnLAmount":900}
+```
+
+Expected: one row for account 5001 (`SELECT * FROM Payment.TransactionDetails WHERE MessageId = '11111111-1111-1111-1111-111111111111'`), and `LAG` is `0` (the duplicate is committed, not saved). Rows from the file feed and the UI popup have `MessageId = NULL`.
+
 ## Troubleshooting
 
 | Symptom | Likely cause / fix |
@@ -169,4 +181,4 @@ Pass: the rows from tests A, B and C are present (SourceType = `Messaging`; file
 | `Kafka consume/save failed` in API log | Read the exception. Most often the SQL connection string (`Trusted_Connection=True` together with `User ID/Password` is contradictory) or the stored procedure missing in `BnBUsecase`. |
 | Rows in DB but the UI does not update | Angular `apiBaseUrl` points to a different API instance/port than the one running (see section 0). |
 | Swagger default body saved as `string / 0 / 0` | Expected: it is a valid message with amount 0 (Invalid). Use real values. |
-| Rows split between two API instances | Two instances share group `pnl-consumer`. Run only one. |
+| Rows split between two API instances | Two instances share group `pnl-consumer1`. Run only one. |

@@ -31,6 +31,9 @@ namespace BNB.UsecaseRepository.EF
                 e.ToTable("TransactionDetails", "Payment");
                 e.HasKey(x => x.TransactionId);
                 e.Property(x => x.TransactionId).ValueGeneratedOnAdd();
+                e.Property(x => x.MessageId);
+                // Unique when present: a second insert of the same message id is rejected by the database.
+                e.HasIndex(x => x.MessageId).IsUnique().HasFilter("[MessageId] IS NOT NULL").HasDatabaseName("UX_TransactionDetails_MessageId");
                 e.Property(x => x.FileName).HasColumnType("varchar(400)").IsRequired();
                 e.Property(x => x.SourceType).HasColumnType("varchar(10)");
                 e.Property(x => x.SourceSystem).HasColumnType("varchar(100)");
